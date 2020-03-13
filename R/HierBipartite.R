@@ -415,7 +415,7 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
   #   p: p-value to filter merged groups by
   # Output:
   #   retLst; list of results from bipartite hierarchical clustering filtered by p-value
-  if (!"nodePvals" %in% results) {
+  if (!"nodePvals" %in% names(results)) {
     print("p-value must be present in results")
   } else {
     nodeMemberships = results[["nodeMemberships"]]
