@@ -83,8 +83,12 @@ whichMerge <- function(dissMat) {
 #' @param p.value boolean for whether to generate p-values for each merge
 #' @param n_perm number of permutations for generating p-values. Ignored if p.value = FALSE
 #' @param parallel boolean for whether to parallelize subsampling and p-value generation step
-#' @return list of results from bipartite hierarchical clustering, containing (1) list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
-#'         (2) dendrogram class of resulting dendrogram, (3) list of SCCA output for each new merged group, in order of merge, (4) p-value of each new merge, in order of merge
+#' @return list of results from bipartite hierarchical clustering, containing 
+#'         (1) nodeMemberships: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
+#'         (2) hclustObj: dendrogram class of resulting dendrogram, 
+#'         (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
+#'         (4) nodeGroups: list of groups for each merge, in order fo merge,
+#'         (5) nodePvals: p-value of each new merge, in order of merge if p.value = TRUE.
 #' @export
 hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = TRUE) {
   # Main bipartite hierarchial clustering algorithm
@@ -103,7 +107,8 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
   #     nodeMembership: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge
   #     hclustObj: dendrogram class of resulting dendrogram
   #     nodeSCCA: list of SCCA output for each new merged group, in order of merge
-  #     nodePvals: p-value of each new merge, in order of merge
+  #     mergeGroups: list of groups for each merge, in order fo merge
+  #     nodePvals: p-value of each new merge, in order of merge if p.value = TRUE
   groupNames <- names(groups)
   
   # construct matrix B representing bipartite relationship
@@ -129,9 +134,11 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
   # (2) height of merged groups (starts at 0 for each group)
   groupIdx <- list()
   nodeHeightsLst <- list()
+  mergeGroups <- list()
   for (i in seq(n_groups)) {
     groupIdx[[i]] <- -i
     nodeHeightsLst[[i]] <- 0
+    mergeGroups[[i]] <- groupNames[i]
   }
   mergeMat <- matrix(0, nrow = n_groups - 1, ncol = 2)
   
@@ -141,6 +148,7 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
   nodePvals <- vector(length = n_nodes)
   nodeHeights <- vector(length = n_nodes)
   nodeSCCA <- list()
+  nodeGroups <- list()
   index <- 1
   
   while (length(dissMat) > 0) {
@@ -156,6 +164,7 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
     newGraph <- constructBipartiteGraph(X[newGroupMembers, ], Y[newGroupMembers, ], 
       n_subsample, subsampling_ratio, parallel = parallel)
     nodeSCCA[[index]] = scca::scca(X[newGroupMembers, ], Y[newGroupMembers, ], penalty = "LASSO")
+    nodeGroups[[index]] <- c(mergeGroups[[row]], mergeGroups[[col]])
     
     # calculate p-values
     if (p.value) {
@@ -178,6 +187,11 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
     groupIdx[[col]] <- NULL
     groupIdx[[length(groupIdx) + 1]] <- index
     names(groupIdx) <- seq(length(groupIdx))
+
+    mergeGroups[[length(mergeGroups) + 1]] <- c(mergeGroups[[row]], mergeGroups[[col]])
+    mergeGroups[[row]] <- NULL
+    mergeGroups[[col]] <- NULL
+    names(mergeGroups) <- seq(length(mergeGroups))
     
     bgraphs[[row]] <- NULL
     bgraphs[[col]] <- NULL
@@ -200,10 +214,10 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
   
   # create hclust object
   hclustObj <- createHclust(groupNames, mergeMat, nodeHeights)
-  retLst <- list(nodeMemberships = nodeMemberships, hclustObj = hclustObj, nodeSCCA = nodeSCCA)
+  retLst <- list(nodeMemberships = nodeMemberships, hclustObj = hclustObj, nodeSCCA = nodeSCCA, nodeGroups = nodeGroups)
 
   if (p.value) {
-    retLst[["nodePvals"]] = nodePvals
+    retLst[["nodePvals"]] <- nodePvals
   }
   
   return(retLst)
@@ -416,28 +430,28 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
   # Output:
   #   retLst; list of results from bipartite hierarchical clustering filtered by p-value
   if (!"nodePvals" %in% names(results)) {
-    print("p-value must be present in results")
+    print("p-value must be computed first!")
   } else {
-    nodeMemberships = results[["nodeMemberships"]]
-    nodeSCCA = results[["nodeSCCA"]]
-    nodePvals = results[["nodePvals"]]
+    nodeMemberships <- results[["nodeMemberships"]]
+    nodeSCCA <- results[["nodeSCCA"]]
+    nodePvals <- results[["nodePvals"]]
 
-    retLst = list()
-    nodeMembershipsFiltered = list()
-    nodeSCCAFiltered = list()
-    nodePvalsFiltered = list()
+    retLst <- list()
+    nodeMembershipsFiltered <- list()
+    nodeSCCAFiltered <- list()
+    nodePvalsFiltered <- list()
 
-    n = length(nodePvals)
-    index = 1
+    n <- length(nodePvals)
+    index <- 1
     for (i in seq(n)) {
       if (nodePvals[i] <= p) {
-        nodeMembershipsFiltered[[index]] = nodeMemberships[[i]]
-        nodeSCCAFiltered[[index]] = nodeSCCA[[i]]
-        nodePvalsFiltered[[index]] = nodePvals[[i]]
-        index = index + 1
+        nodeMembershipsFiltered[[index]] <- nodeMemberships[[i]]
+        nodeSCCAFiltered[[index]] <- nodeSCCA[[i]]
+        nodePvalsFiltered[[index]] <- nodePvals[[i]]
+        index <- index + 1
       }
     }
-    retLst = list("nodeMemberships" = nodeMembershipsFiltered, "nodeSCCA" = nodeSCCAFiltered,
+    retLst <- list("nodeMemberships" = nodeMembershipsFiltered, "nodeSCCA" = nodeSCCAFiltered,
       "nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]])
     return(retLst)
   }

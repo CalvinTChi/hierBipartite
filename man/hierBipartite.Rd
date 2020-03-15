@@ -33,8 +33,12 @@ hierBipartite(
 \item{parallel}{boolean for whether to parallelize subsampling and p-value generation step}
 }
 \value{
-list of results from bipartite hierarchical clustering, containing (1) list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
-        (2) dendrogram class of resulting dendrogram, (3) list of SCCA output for each new merged group, in order of merge, (4) p-value of each new merge, in order of merge
+list of results from bipartite hierarchical clustering, containing 
+        (1) nodeMemberships: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
+        (2) hclustObj: dendrogram class of resulting dendrogram, 
+        (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
+        (4) nodeGroups: list of groups for each merge, in order fo merge,
+        (5) nodePvals: p-value of each new merge, in order of merge if p.value = TRUE
 }
 \description{
 Main bipartite hierarchial clustering algorithm
