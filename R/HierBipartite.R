@@ -70,10 +70,10 @@ whichMerge <- function(dissMat) {
   return(list("col" = col, "row" = row))
 }
 
-
 #' Bipartite Hierarchical Clustering
 #'
-#' Main bipartite hierarchial clustering algorithm
+#' Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") for vignette on using the
+#' hierBipartite package.
 #'
 #' @param X an n x p matrix (e.g. for gene expression)
 #' @param Y an n x q matrix (e.g. for drug sensitivity)
@@ -88,7 +88,7 @@ whichMerge <- function(dissMat) {
 #'         (2) hclustObj: dendrogram class of resulting dendrogram, 
 #'         (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
 #'         (4) nodeGroups: list of groups for each merge, in order fo merge,
-#'         (5) nodePvals: p-value of each new merge, in order of merge if p.value = TRUE.
+#'         (5) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 #' @export
 hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = TRUE) {
   # Main bipartite hierarchial clustering algorithm
@@ -108,7 +108,7 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
   #     hclustObj: dendrogram class of resulting dendrogram
   #     nodeSCCA: list of SCCA output for each new merged group, in order of merge
   #     mergeGroups: list of groups for each merge, in order fo merge
-  #     nodePvals: p-value of each new merge, in order of merge if p.value = TRUE
+  #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
   groupNames <- names(groups)
   
   # construct matrix B representing bipartite relationship
@@ -250,11 +250,11 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
   p <- ncol(mat1)
   q <- ncol(mat2)
 
-  n_cores <- detectCores() - 1
+  n_cores <- parallel::detectCores() - 1
   if (parallel && n_cores > 0 && n_subsample > 1) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q", 
-      "subsampling_ratio", "scca"), envir = environment())
+      "subsampling_ratio"), envir = environment())
     parallel::clusterSetRNGStream(cl = cl)
 
     Bmatrices <- parallel::parLapply(cl = cl, seq(n_subsample), function (x) {
@@ -356,7 +356,7 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
   n_cores <- parallel::detectCores() - 1
   if (parallel && n_cores > 0) {
     cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl, c("X1", "Y1", "X2", "Y2", "scca", "matrixDissimilarity"),
+    parallel::clusterExport(cl, c("X1", "Y1", "X2", "Y2", "matrixDissimilarity"),
       envir = environment())
     parallel::clusterSetRNGStream(cl = cl)
   
@@ -435,32 +435,30 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
     nodeMemberships <- results[["nodeMemberships"]]
     nodeSCCA <- results[["nodeSCCA"]]
     nodePvals <- results[["nodePvals"]]
+    nodeGroups <- results[["nodeGroups"]]
 
     retLst <- list()
     nodeMembershipsFiltered <- list()
     nodeSCCAFiltered <- list()
     nodePvalsFiltered <- list()
+    nodeGroupsFiltered <- list()
 
     n <- length(nodePvals)
     index <- 1
     for (i in seq(n)) {
       if (nodePvals[i] <= p) {
-        nodeMembershipsFiltered[[index]] <- nodeMemberships[[i]]
-        nodeSCCAFiltered[[index]] <- nodeSCCA[[i]]
-        nodePvalsFiltered[[index]] <- nodePvals[[i]]
-        index <- index + 1
+        nodeMembershipsFiltered[[toString(index)]] <- nodeMemberships[[i]]
+        nodeSCCAFiltered[[toString(index)]] <- nodeSCCA[[i]]
+        nodePvalsFiltered[[toString(index)]] <- nodePvals[[i]]
+        nodeGroupsFiltered[[toString(index)]] <- nodeGroups[[i]]
       }
+      index <- index + 1
     }
     retLst <- list("nodeMemberships" = nodeMembershipsFiltered, "nodeSCCA" = nodeSCCAFiltered,
-      "nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]])
+      "nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]], "nodeGroups" = nodeGroupsFiltered)
     return(retLst)
   }
 }
-
-
-
-
-
 
 
 

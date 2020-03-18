@@ -1,0 +1,135 @@
+---
+title: "hierBipartite"
+output: rmarkdown::html_vignette
+  #fig_width: 12
+  #fig_height: 5
+vignette: >
+  %\VignetteIndexEntry{hierBipartite Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+bibliography: vignette.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Load Data
+
+The $\texttt{hierBipartite}$ package contains two datasets
+
++ CCLE data [@barretina2012cancer]: preprocessed CCLE data ready to be used by the $\texttt{hierBipartite}$ package. Preprocessing steps described in the paper.
++ Simulated data: simulation described in the paper.
+
+For additional details regarding the data, execute `?CCLE` and `?simulation` respectively. For this vignette we will work with the CCLE dataset, which contains
+
++ $X \in \mathbb{R}^{n \times p}$: gene expression measured in $\log_{2}RPKM$^[$RPKM$ stands for reads per kilobase of transcript, per million mapped reads, a normalized unit of transcript expression], for $n$ cell lines across $p$ genes.
++ $Y \in \mathbb{R}^{n \times q}$: drug sensitivity measured in terms of area over dose-response curve, for $n$ cell lines across $q$ drugs.
+
+```{r}
+library(hierBipartite)
+data(CCLE)
+
+# gene expression
+X = CCLE[["X"]]
+# drug sensitivity
+Y = CCLE[["Y"]]
+# starting group memberships
+groups = CCLE[["groups"]]
+
+# Row indices of samples in X, Y from liver
+groups[["LIVER"]]
+```
+
+The cell lines are grouped by their tissue of origin (e.g. liver), and group membership is contained in `CCLE[["groups"]]`, which is a list of vectors, each of which contains row indices of $X, Y$ from a particular tissue. 
+
+## 2. Bipartite Hierarchical Clustering
+
+### 2.1 Executing $\texttt{hierBipartite}$
+
+The bipartite hierarchical clustering method builds a hierarchy of clusters agglomeratively by grouping different tissues of origin together by the similarity of their gene-drug associations, where the relationship between genes and drugs is bipartite. Gene-drug associations are summarized by canonical vectors solved with sparse canonical correlation analysis (SCCA), and a nucleus norm-based dissimilarity measure is used to contrast canonical vectors. The key statistical procedures of this method are
+
++ Repeated subsampling of cell lines from a group, each followed by SCCA analysis, to help produce more robust dendrograms. 
++ P-value generation for each merge by permuting rows of $X$ while keeping rows of $Y$ fixed.
+
+These statistical procedures are optional and disabled by default. Since the steps for the above statistical procedures are each independent of each other, the procedures can be parallelized and this is implemented in $\texttt{hierBipartite}$ using the $\texttt{parallel}$ package. The decision to parallelize computation can be toggled on or off and is on by default. 
+
+We apply `hierBipartite()` to the CCLE dataset and enable p-value generation so that we know which merges are statistically significant. Although enabling subsampling helps produce more robust merge results, the runtime also increases by a factor of at least 3. 
+
+
+```{r, cache=TRUE, results='hide'}
+result = hierBipartite(X = X, Y = Y, groups = groups, p.value = TRUE, n_perm = 100, parallel = TRUE)
+```
+
+### 2.2 Examining Results
+
+The `hierBipartite()` method outputs a list containing
+
++ `hclust`: object of class dendrogram
++ `nodeSCCA`: list of SCCA output for each new merged group, in order of merge
++ `nodeMembership`: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge
++ `nodeGroups`: list of groups for each merge, in order fo merge
++ `nodePvals`: list p-value of each new merge, in order of merge if `p.value = TRUE`
+
+To view the resulting dendrogram
+
+```{r, fig.align='center', fig.width=7, fig.height=4}
+hclustObj = result[["hclustObj"]]
+par(mar=c(3,4,1,20))
+plot(hclustObj, horiz = TRUE)
+```
+
+To see the order by which groups are merged and their corresponding p-values.
+
+```{r, collapse=TRUE}
+# 1st merge
+print(paste(paste(result[["nodeGroups"]][[1]], collapse = " merge with "), "with p-value", result[["nodePvals"]][[1]]))
+# 2nd merge
+print(paste(paste(result[["nodeGroups"]][[2]], collapse = " merge with "), "with p-value", result[["nodePvals"]][[2]]))
+# 3rd merge
+print(paste(paste(result[["nodeGroups"]][[3]], collapse = " merge with "), "with p-value", result[["nodePvals"]][[3]]))
+# 4th merge
+print(paste(paste(result[["nodeGroups"]][[4]], collapse = " merge with "), "with p-value", result[["nodePvals"]][[4]]))
+# 5th merge
+print(paste(paste(result[["nodeGroups"]][[5]], collapse = " merge with "), "with p-value", result[["nodePvals"]][[5]]))
+```
+
+Hence the first 5 merges are 
+
+1. `LUNG_2` and `LUNG_1`
+2. `HAEMATOPOIETIC_AND_LYMPHOID_TISSUE_1` and `HAEMATOPOIETIC_AND_LYMPHOID_TISSUE_2`
+3. `LARGE_INTESTINE` and `STOMACH`
+4. `LUNG_1`, `LUNG_2`, `PANCREAS`
+5. `LARGE_INTESTINE`, `STOMACH`, and `LIVER`
+
+To select the group of cell lines from the 4th merge
+
+```{r}
+rowIdx = result[["nodeMemberships"]][[4]]
+
+X4 = X[rowIdx, ]
+Y4 = Y[rowIdx, ]
+head(X4[, 1:5])
+```
+
+Examine the $\texttt{SCCA}(\cdot)$ analysis for the 1st merge by plotting gene coefficients.
+
+```{r, fig.width=7, fig.height=4}
+scca1 = result[["nodeSCCA"]][[1]]
+plot(scca1$A, xlab = "gene coefficient index", ylab = "coefficient")
+```
+
+### 2.3 Select Significant Merges
+
+Filter output of `hierBipartite()` by $p \leq 0.10$. 
+
+```{r}
+filterResults = getSignificantMergedGroups(results = result, p = 0.10)
+filterResults$nodeGroups
+```
+
+The merges that are significant at $p \leq 0.10$ are the first merge between the two lung groups and the second merge between the haematepoietic and lymphoid tissue groups.
+
+## References
+
+

@@ -38,8 +38,9 @@ list of results from bipartite hierarchical clustering, containing
         (2) hclustObj: dendrogram class of resulting dendrogram, 
         (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
         (4) nodeGroups: list of groups for each merge, in order fo merge,
-        (5) nodePvals: p-value of each new merge, in order of merge if p.value = TRUE
+        (5) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 }
 \description{
-Main bipartite hierarchial clustering algorithm
+Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") for vignette on using the
+hierBipartite package.
 }
