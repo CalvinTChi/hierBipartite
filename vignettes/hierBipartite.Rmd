@@ -47,7 +47,7 @@ The cell lines are grouped by their tissue of origin (e.g. liver), and group mem
 
 ### 2.1 Executing $\texttt{hierBipartite}$
 
-The bipartite hierarchical clustering method builds a hierarchy of clusters agglomeratively by grouping different tissues of origin together by the similarity of their gene-drug associations, where the relationship between genes and drugs is bipartite. Gene-drug associations are summarized by canonical vectors solved with sparse canonical correlation analysis (SCCA), and a nucleus norm-based dissimilarity measure is used to contrast canonical vectors. The key statistical procedures of this method are
+The package $\texttt{hierBipartite}$ implements the bipartite agglomerative clustering method detailed in the paper as a bipartite hierarchical clustering algorithm, which builds a hierarchy of clusters agglomeratively by grouping different tissues of origin together by the similarity of their gene-drug associations, where the relationship between genes and drugs is bipartite. Gene-drug associations are summarized by canonical vectors solved with sparse canonical correlation analysis (SCCA), and a nucleus norm-based dissimilarity measure is used to contrast canonical vectors. The key statistical procedures of this method are
 
 + Repeated subsampling of cell lines from a group, each followed by SCCA analysis, to help produce more robust dendrograms. 
 + P-value generation for each merge by permuting rows of $X$ while keeping rows of $Y$ fixed.
