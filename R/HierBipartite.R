@@ -163,7 +163,18 @@ hierBipartite <- function(X, Y, groups, n_subsample = 1, subsampling_ratio = 1, 
     nodeHeights[index] <- nodeHeightsLst[[n_groups + index]] 
     newGraph <- constructBipartiteGraph(X[newGroupMembers, ], Y[newGroupMembers, ], 
       n_subsample, subsampling_ratio, parallel = parallel)
-    nodeSCCA[[index]] = scca::scca(X[newGroupMembers, ], Y[newGroupMembers, ], penalty = "LASSO")
+
+    # standardize columns of X, Y
+    Xnew = X[newGroupMembers, ]
+    Ynew = Y[newGroupMembers, ]
+
+    Xnew <- scale(Xnew)
+    Ynew <- scale(Ynew)
+      
+    Xnew[is.nan(Xnew)] = 0
+    Ynew[is.nan(Ynew)] = 0
+
+    nodeSCCA[[index]] = scca::scca(Xnew, Ynew, penalty = "LASSO")
     nodeGroups[[index]] <- c(mergeGroups[[row]], mergeGroups[[col]])
     
     # calculate p-values
