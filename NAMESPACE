@@ -9,3 +9,5 @@ export(matrixDissimilarity)
 export(null_distri)
 export(p_value)
 export(whichMerge)
+
+importFrom(magrittr,"%>%")
