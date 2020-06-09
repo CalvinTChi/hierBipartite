@@ -72,7 +72,7 @@ whichMerge <- function(dissMat) {
 
 #' Bipartite Hierarchical Clustering
 #'
-#' Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") for vignette on using the
+#' Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
 #' hierBipartite package.
 #'
 #' @param X an n x p matrix (e.g. for gene expression)
