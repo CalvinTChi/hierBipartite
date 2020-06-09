@@ -310,7 +310,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 </ul>
 <p>For additional details regarding the data, execute <code>?CCLE</code> and <code>?simulation</code> respectively. For this vignette we will work with the CCLE dataset, which contains</p>
 <ul>
-<li><span class="math inline">\(X \in \mathbb{R}^{n \times p}\)</span>: gene expression measured in <span class="math inline">\(\log_{2}RPKM\)</span><a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, for <span class="math inline">\(n\)</span> cell lines across <span class="math inline">\(p\)</span> genes.</li>
+<li><span class="math inline">\(X \in \mathbb{R}^{n \times p}\)</span>: gene expression measured in <span class="math inline">\(\log_{2}TPM\)</span><a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>, for <span class="math inline">\(n\)</span> cell lines across <span class="math inline">\(p\)</span> genes.</li>
 <li><span class="math inline">\(Y \in \mathbb{R}^{n \times q}\)</span>: drug sensitivity measured in terms of area over dose-response curve, for <span class="math inline">\(n\)</span> cell lines across <span class="math inline">\(q\)</span> drugs.</li>
 </ul>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(hierBipartite)</a>
@@ -430,7 +430,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p><span class="math inline">\(RPKM\)</span> stands for reads per kilobase of transcript, per million mapped reads, a normalized unit of transcript expression<a href="#fnref1" class="footnote-back">↩</a></p></li>
+<li id="fn1"><p><span class="math inline">\(TPM\)</span> stands for transcripts per million, a normalized unit of transcript expression.<a href="#fnref1" class="footnote-back">↩</a></p></li>
 </ol>
 </div>
 

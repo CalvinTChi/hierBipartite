@@ -23,7 +23,7 @@ The $\texttt{hierBipartite}$ package contains two datasets
 
 For additional details regarding the data, execute `?CCLE` and `?simulation` respectively. For this vignette we will work with the CCLE dataset, which contains
 
-+ $X \in \mathbb{R}^{n \times p}$: gene expression measured in $\log_{2}RPKM$^[$RPKM$ stands for reads per kilobase of transcript, per million mapped reads, a normalized unit of transcript expression], for $n$ cell lines across $p$ genes.
++ $X \in \mathbb{R}^{n \times p}$: gene expression measured in $\log_{2}TPM$^[$TPM$ stands for transcripts per million, a normalized unit of transcript expression.], for $n$ cell lines across $p$ genes.
 + $Y \in \mathbb{R}^{n \times q}$: drug sensitivity measured in terms of area over dose-response curve, for $n$ cell lines across $q$ drugs.
 
 ```{r}
