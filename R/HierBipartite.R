@@ -20,6 +20,53 @@ dendroOrder <- function(mergeMat) {
   return(dendro_order)
 }
 
+#' Given index from hclust merge matrix, return X, Y row indices corresponding to groups specified by index
+#'
+#' @param idx index from hclust merge
+#' @param groups list of starting group membership (input to hierBipartite())
+#' @param groupMerges list of merged groups thus far (groupMerge[[3]] is a vector of group names from cluster created at third merge)
+#' @return vector of row indices corresponding to X, Y
+#' @export
+getMergeGroupRows <- function(idx, groups, groupMerges) {
+  if (idx < 0) {
+    return(groups[[-idx]])
+  } 
+  rows = c()
+  for (group in groupMerges[[idx]]) {
+    rows = c(rows, groups[[group]])
+  }
+  return(rows)
+}
+
+#' Given group indices for a merge from hclust merge matrix, return group names of merged cluster
+#'
+#' @param idx1 group index of first group from hclust merge
+#' @param idx2 group index of second group from hclust merge
+#' @param groups list of starting group membership (input to hierBipartite())
+#' @param groupMerges list of merged groups thus far (groupMerge[[3]] is a vector of group names from cluster created at third merge)
+#' @return vector of group names after merge of group indicated by idx1 and idx2
+#' @export
+newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
+  groupNames = names(groups)
+
+  newestGroup = c()
+  # update first group
+  if (idx1 < 0) {
+    newestGroup = c(newestGroup, groupNames[-idx1])
+  } else {
+    newestGroup = c(newestGroup, groupMerges[[idx1]])
+  }
+
+  # update second group
+  if (idx2 < 0) {
+    newestGroup = c(newestGroup, groupNames[-idx2])
+  } else {
+    newestGroup = c(newestGroup, groupMerges[[idx2]])
+  }
+
+  return(newestGroup)
+}
+
 #' Bipartite Hierarchical Clustering
 #'
 #' Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
@@ -56,10 +103,8 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #   parallel: boolean for whether to parallelize subsampling and p-value generation step
   # Output:
   #   retLst: list of results from bipartite hierarchical clustering, containing
-  #     nodeMembership: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge
   #     hclustObj: dendrogram class of resulting dendrogram
-  #     nodeSCCA: list of SCCA output for each new merged group, in order of merge
-  #     mergeGroups: list of groups for each merge, in order of merge
+  #     groupMerges: list of groups for each merge, in order of merge
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
   groupNames <- names(groups)
   
@@ -83,12 +128,40 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   }
   
   hclustObj = hclust(as.dist(dissMat), method = link)
-  
   retLst <- list(hclustObj = hclustObj)
 
   if (p.value) {
-    # TODO
+    merge = hclustObj$merge
+    groupMerges = list()
+    nodePvals = list()
+    for (i in seq(nrow(merge))) {
+      rows1 = getMergeGroupRows(merge[i, 1], groups, groupMerges)
+      rows2 = getMergeGroupRows(merge[i, 2], groups, groupMerges)
+
+      X1 = X[rows1, ]
+      Y1 = Y[rows1, ]
+      X2 = X[rows2, ]
+      Y2 = Y[rows2, ]
+
+      if (merge[i, 1] < 0 && merge[i, 2] < 0) {
+        d = dissMat[-merge[i, 1], -merge[i, 2]]
+      } else {
+        B1 = constructBipartiteGraph(X1, Y1, n_subsample = n_subsample, 
+          subsampling_ratio = subsampling_ratio, parallel = parallel)
+        B2 = constructBipartiteGraph(X2, Y2, n_subsample = n_subsample, 
+          subsampling_ratio = subsampling_ratio, parallel = parallel)
+        d = matrixDissimilarity(B1, B2)
+      }
+
+      dissimilarities = null_distri(X1, Y1, X2, Y2)
+      nodePvals[[i]] = p_value(d, dissimilarities)
+
+      groupMerges[[length(groupMerges) + 1]] = newMergedGroup(merge[i, 1], merge[i, 2], groups, groupMerges)
+    }
   }
+
+  retLst[["nodePvals"]] = nodePvals
+  retLst[["groupMerges"]] = groupMerges
   
   return(retLst)
 }
