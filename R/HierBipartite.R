@@ -178,7 +178,6 @@ scale_features <- function(mat) {
   return(mat)
 }
 
-
 #' Construct Bipartite Graph
 #'
 #' Constructs matrix B containing information of bipartite relationship between mat1 and mat2 (see paper)
@@ -374,6 +373,7 @@ p_value <- function(dissimilarity, dissimilarities) {
 #' @return list of results from bipartite hierarchical clustering filtered by p-value
 #' @export
 getSignificantMergedGroups <- function(results, p = 0.05) {
+  # TODO
   # filters bipartite hierarchical clustering merged groups by p-value
   # Input:
   #   results: list of results from bipartite hierarchical clustering
@@ -383,30 +383,23 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
   if (!"nodePvals" %in% names(results)) {
     print("p-value must be computed first!")
   } else {
-    nodeMemberships <- results[["nodeMemberships"]]
-    nodeSCCA <- results[["nodeSCCA"]]
     nodePvals <- results[["nodePvals"]]
-    nodeGroups <- results[["nodeGroups"]]
+    groupMerges <- results[["groupMerges"]]
 
     retLst <- list()
-    nodeMembershipsFiltered <- list()
-    nodeSCCAFiltered <- list()
     nodePvalsFiltered <- list()
-    nodeGroupsFiltered <- list()
+    groupMergesFiltered <- list()
 
     n <- length(nodePvals)
     index <- 1
     for (i in seq(n)) {
       if (nodePvals[i] <= p) {
-        nodeMembershipsFiltered[[toString(index)]] <- nodeMemberships[[i]]
-        nodeSCCAFiltered[[toString(index)]] <- nodeSCCA[[i]]
         nodePvalsFiltered[[toString(index)]] <- nodePvals[[i]]
-        nodeGroupsFiltered[[toString(index)]] <- nodeGroups[[i]]
+        groupMergesFiltered[[toString(index)]] <- groupMerges[[i]]
       }
       index <- index + 1
     }
-    retLst <- list("nodeMemberships" = nodeMembershipsFiltered, "nodeSCCA" = nodeSCCAFiltered,
-      "nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]], "nodeGroups" = nodeGroupsFiltered)
+    retLst <- list("nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]], "groupMerges" = groupMergesFiltered)
     return(retLst)
   }
 }
