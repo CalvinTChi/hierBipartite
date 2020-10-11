@@ -8,6 +8,7 @@ hierBipartite(
   X,
   Y,
   groups,
+  link = "ward.D2",
   n_subsample = 1,
   subsampling_ratio = 1,
   p.value = FALSE,
@@ -34,11 +35,9 @@ hierBipartite(
 }
 \value{
 list of results from bipartite hierarchical clustering, containing 
-        (1) nodeMemberships: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
-        (2) hclustObj: dendrogram class of resulting dendrogram, 
-        (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
-        (4) nodeGroups: list of groups for each merge, in order fo merge,
-        (5) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
+        (1) hclustObj: dendrogram class of resulting dendrogram, 
+        (2) groupMerges: list of groups for each merge, in order of merge,
+        (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 }
 \description{
 Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the

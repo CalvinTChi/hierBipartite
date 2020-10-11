@@ -4,12 +4,14 @@
 \name{simulation}
 \alias{simulation}
 \title{Simulation Dataset}
-\format{A list with the elements of simulated gene expression, simulated drug sensitivities, and group membership.
+\format{
+A list with the elements of simulated gene expression, simulated drug sensitivities, and group membership.
 \describe{
   \item{X}{n x p gene expression matrix}
   \item{Y}{n x q drug sensitivities matrix}
   \item{groups}{List of starting groups. Each group is represented by a vector of row indices for X, Y.}
-}}
+}
+}
 \usage{
 simulation
 }

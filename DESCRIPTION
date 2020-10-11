@@ -16,7 +16,8 @@ Imports:
     doParallel,
     parallel,
     scca,
-    magrittr
-RoxygenNote: 7.0.2
+    magrittr,
+    irlba
+RoxygenNote: 7.1.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

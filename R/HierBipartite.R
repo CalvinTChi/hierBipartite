@@ -1,25 +1,3 @@
-#' Creates vector of order by which leaves are merged given matrix of merge events
-#'
-#' @param mergeMat matrix of dimension [n - 1, 2] that indicates merge events, where n is number of starting groups (see documentation for "merge" matrix contained in hclust class for details)
-#' @return vector of leaf (group) indices, in order of merge
-#' @export
-dendroOrder <- function(mergeMat) {
-  # creates vector of order by which leaves are merged given matrix of merge events
-  # Input:
-  #   mergeMat: matrix of dimension [n - 1, 2] that indicates merge events, where n is number of
-  #             starting groups (see documentation for "merge" matrix contained in hclust class for details)
-  # Output:
-  #   dendro_order: vector of leaf (group) indices, in order of merge
-  mergeMatT <- t(mergeMat)
-  dendro_order <- c()
-  for (i in seq(length(mergeMat))) {
-    if (mergeMatT[i] < 0) {
-      dendro_order <- c(dendro_order, -mergeMatT[i])
-    }
-  }
-  return(dendro_order)
-}
-
 #' Given index from hclust merge matrix, return X, Y row indices corresponding to groups specified by index
 #'
 #' @param idx index from hclust merge
@@ -28,6 +6,13 @@ dendroOrder <- function(mergeMat) {
 #' @return vector of row indices corresponding to X, Y
 #' @export
 getMergeGroupRows <- function(idx, groups, groupMerges) {
+  # Given index from hclust merge matrix, return X, Y row indices corresponding to groups specified by index
+  # Input:
+  #   idx: index from hclust merge
+  #   groups: list of starting group membership (input to hierBipartite())
+  #   groupMerges: list of merged groups thus far (groupMerge[[3]] is a vector of group names from cluster created at third merge)
+  # Output:
+  #   rows: vector of row indices corresponding to X, Y
   if (idx < 0) {
     return(groups[[-idx]])
   } 
@@ -47,6 +32,15 @@ getMergeGroupRows <- function(idx, groups, groupMerges) {
 #' @return vector of group names after merge of group indicated by idx1 and idx2
 #' @export
 newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
+  # Given group indices for a merge from hclust merge matrix, return group names of merged cluster
+  # Input:
+  #   idx1: group index of first group from hclust merge
+  #   idx2: group index of second group from hclust merge
+  #   groups: list of starting group membership (input to hierBipartite())
+  #   groupMerges: list of merged groups thus far (groupMerge[[3]] is a vector of group names from cluster created at third merge)
+  # Output:
+  #   newestGroup: vector of group names after merge of group indicated by idx1 and idx2
+
   groupNames = names(groups)
 
   newestGroup = c()
@@ -81,13 +75,11 @@ newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
 #' @param n_perm number of permutations for generating p-values. Ignored if p.value = FALSE
 #' @param parallel boolean for whether to parallelize subsampling and p-value generation step
 #' @return list of results from bipartite hierarchical clustering, containing 
-#'         (1) nodeMemberships: list of samples (in terms of indices of X, Y) of each new merged group, in order of merge,
-#'         (2) hclustObj: dendrogram class of resulting dendrogram, 
-#'         (3) nodeSCCA: list of SCCA output for each new merged group, in order of merge, 
-#'         (4) nodeGroups: list of groups for each merge, in order fo merge,
-#'         (5) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
+#'         (1) hclustObj: dendrogram class of resulting dendrogram, 
+#'         (2) groupMerges: list of groups for each merge, in order of merge,
+#'         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 #' @export
-hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = TRUE) {
+hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = FALSE) {
   # Main bipartite hierarchial clustering algorithm
   # Input:
   #   X: an n x p matrix (e.g. for gene expression)
@@ -108,6 +100,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
   groupNames <- names(groups)
   
+  print("Computing starting dissimilarity matrix...")
   # construct matrix B representing bipartite relationship
   bgraphs <- lapply(groups, function(gid) {
     mat1 <- X[gid, ]
@@ -126,15 +119,23 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
       dissMat[j, i] <- dissMat[i, j]
     }
   }
-  
   hclustObj = hclust(as.dist(dissMat), method = link)
+  hclustObj$labels = names(groups)
   retLst <- list(hclustObj = hclustObj)
 
+  # create groupMerges
+  groupMerges = list()
+  merge = hclustObj$merge
+  n_merges = nrow(merge)
+  for (i in seq(n_merges)) {
+    groupMerges[[length(groupMerges) + 1]] = newMergedGroup(merge[i, 1], merge[i, 2], groups, groupMerges)
+  }
+  retLst[["groupMerges"]] = groupMerges
+
+  # p-value
   if (p.value) {
-    merge = hclustObj$merge
-    groupMerges = list()
     nodePvals = list()
-    for (i in seq(nrow(merge))) {
+    for (i in seq(n_merges)) {
       rows1 = getMergeGroupRows(merge[i, 1], groups, groupMerges)
       rows2 = getMergeGroupRows(merge[i, 2], groups, groupMerges)
 
@@ -146,22 +147,20 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
       if (merge[i, 1] < 0 && merge[i, 2] < 0) {
         d = dissMat[-merge[i, 1], -merge[i, 2]]
       } else {
-        B1 = constructBipartiteGraph(X1, Y1, n_subsample = n_subsample, 
-          subsampling_ratio = subsampling_ratio, parallel = parallel)
-        B2 = constructBipartiteGraph(X2, Y2, n_subsample = n_subsample, 
-          subsampling_ratio = subsampling_ratio, parallel = parallel)
+        B1 = constructBipartiteGraph(X1, Y1, n_subsample = 1, 
+          subsampling_ratio = 1, parallel = FALSE)
+        B2 = constructBipartiteGraph(X2, Y2, n_subsample = 1, 
+          subsampling_ratio = 1, parallel = FALSE)
         d = matrixDissimilarity(B1, B2)
       }
 
       dissimilarities = null_distri(X1, Y1, X2, Y2)
       nodePvals[[i]] = p_value(d, dissimilarities)
 
-      groupMerges[[length(groupMerges) + 1]] = newMergedGroup(merge[i, 1], merge[i, 2], groups, groupMerges)
+      print(paste0("P-value for merge ", i, "/", n_merges, " complete"))
     }
+    retLst[["nodePvals"]] = nodePvals
   }
-
-  retLst[["nodePvals"]] = nodePvals
-  retLst[["groupMerges"]] = groupMerges
   
   return(retLst)
 }
@@ -172,6 +171,11 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
 #' @return an n x p matrix with columns with positive variance scaled 
 #' @export
 scale_features <- function(mat) {
+  # Only scales features (columns) with positive variance
+  # Input:
+  #   mat: an n x p matrix (gene expression or drug sensitivity)
+  # Output:
+  #   mat: an n x p matrix with columns with positive variance scaled
   vars <- apply(mat, 2, var)
   idx <- which(vars > 0)
   mat[, idx] <- scale(mat[, idx])
@@ -199,13 +203,20 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
   #   parallel: boolean for whether to parallelize subsampling
   # Output:
   #   B: a p x q matrix containing information of bipartite relationship
-
   n_samples <- nrow(mat1)
   p <- ncol(mat1)
   q <- ncol(mat2)
 
+  # if n_samples <= 5, cannot perform CV from scca(), so do not subsample
+  if (n_samples <= 5) {
+    mat1 <- scale_features(mat1)
+    mat2 <- scale_features(mat2)
+    scca_rlt <- scca::scca(mat1, mat2, penalty = "LASSO")
+    return(outer(c(scca_rlt$A), c(scca_rlt$B)))
+  }
+
   n_cores <- parallel::detectCores() - 1
-  if (parallel && n_cores > 0 && n_subsample > 1) {
+  if (parallel && n_cores > 0) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q", 
       "subsampling_ratio"), envir = environment())
@@ -320,8 +331,8 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
       scca1 <- scca::scca(X1.b, Y1, penalty = "LASSO")
       scca2 <- scca::scca(X2.b, Y2, penalty = "LASSO")
       
-      B1 <- outer(scca1$A, scca1$B)
-      B2 <- outer(scca2$A, scca2$B)
+      B1 <- outer(c(scca1$A), c(scca1$B))
+      B2 <- outer(c(scca2$A), c(scca2$B))
       
       return(matrixDissimilarity(B1, B2))
     }, simplify = TRUE)
@@ -337,8 +348,8 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
       scca1 <- scca::scca(X1.b, Y1, penalty = "LASSO")
       scca2 <- scca::scca(X2.b, Y2, penalty = "LASSO")
       
-      B1 <- outer(scca1$A, scca1$B)
-      B2 <- outer(scca2$A, scca2$B)
+      B1 <- outer(c(scca1$A), c(scca1$B))
+      B2 <- outer(c(scca2$A), c(scca2$B))
       
       return(matrixDissimilarity(B1, B2))
       }, simplify = TRUE)
@@ -373,7 +384,6 @@ p_value <- function(dissimilarity, dissimilarities) {
 #' @return list of results from bipartite hierarchical clustering filtered by p-value
 #' @export
 getSignificantMergedGroups <- function(results, p = 0.05) {
-  # TODO
   # filters bipartite hierarchical clustering merged groups by p-value
   # Input:
   #   results: list of results from bipartite hierarchical clustering

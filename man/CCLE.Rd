@@ -4,12 +4,14 @@
 \name{CCLE}
 \alias{CCLE}
 \title{Preprocessed Cancer Cell Line Encyclopedia (CCLE) Dataset}
-\format{A list with elements of gene expression, drug sensitivities, and group membership.
+\format{
+A list with elements of gene expression, drug sensitivities, and group membership.
 \describe{
   \item{X}{n x p gene expression matrix}
   \item{Y}{n x q drug sensitivities matrix}
   \item{groups}{List of starting groups. Each group is represented by a vector of row indices for X, Y.}
-}}
+}
+}
 \usage{
 CCLE
 }
