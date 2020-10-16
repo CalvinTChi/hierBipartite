@@ -179,6 +179,8 @@ scale_features <- function(mat) {
   vars <- apply(mat, 2, var)
   idx <- which(vars > 0)
   mat[, idx] <- scale(mat[, idx])
+  idx <- which(vars == 0)
+  mat[, idx] <- 0
   return(mat)
 }
 
