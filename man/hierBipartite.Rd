@@ -13,7 +13,8 @@ hierBipartite(
   subsampling_ratio = 1,
   p.value = FALSE,
   n_perm = 100,
-  parallel = TRUE
+  parallel = FALSE,
+  p_cutoff = 0.1
 )
 }
 \arguments{
@@ -32,10 +33,12 @@ hierBipartite(
 \item{n_perm}{number of permutations for generating p-values. Ignored if p.value = FALSE}
 
 \item{parallel}{boolean for whether to parallelize subsampling and p-value generation step}
+
+\item{p_cutoff}{p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be calculated for future merges involving current group.}
 }
 \value{
-list of results from bipartite hierarchical clustering, containing 
-        (1) hclustObj: dendrogram class of resulting dendrogram, 
+list of results from bipartite hierarchical clustering, containing
+        (1) hclustObj: dendrogram class of resulting dendrogram,
         (2) groupMerges: list of groups for each merge, in order of merge,
         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 }

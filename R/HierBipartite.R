@@ -15,7 +15,7 @@ getMergeGroupRows <- function(idx, groups, groupMerges) {
   #   rows: vector of row indices corresponding to X, Y
   if (idx < 0) {
     return(groups[[-idx]])
-  } 
+  }
   rows = c()
   for (group in groupMerges[[idx]]) {
     rows = c(rows, groups[[group]])
@@ -74,41 +74,44 @@ newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
 #' @param p.value boolean for whether to generate p-values for each merge
 #' @param n_perm number of permutations for generating p-values. Ignored if p.value = FALSE
 #' @param parallel boolean for whether to parallelize subsampling and p-value generation step
-#' @return list of results from bipartite hierarchical clustering, containing 
-#'         (1) hclustObj: dendrogram class of resulting dendrogram, 
+#' @param p_cutoff p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be calculated for future merges involving current group.
+#' @return list of results from bipartite hierarchical clustering, containing
+#'         (1) hclustObj: dendrogram class of resulting dendrogram,
 #'         (2) groupMerges: list of groups for each merge, in order of merge,
 #'         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 #' @export
-hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = FALSE) {
+hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = FALSE, p_cutoff = 0.10) {
   # Main bipartite hierarchial clustering algorithm
   # Input:
   #   X: an n x p matrix (e.g. for gene expression)
   #   Y: an n x q matrix (e.g. for drug sensitivity)
   #   link: string indicating link function as input to hclust. One of "ward.D", "ward.D2", "single", "complete", "average",
   #         "mcquitty", "median", "centroid".
-  #   groups: a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has 
+  #   groups: a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has
   #           samples 1, 2, 3, and group 2 has samples 4, 5, 6.
   #   n_subsample: number of subsampling to generate matrix B (see paper)
   #   subsampling_ratio: fraction of samples to sample for subsampling to generate matrix B (see paper)
   #   p.value: boolean for whether to generate p-values for each merge
   #   n_perm: number of permutations for generating p-values. Ignored if p.value = FALSE
   #   parallel: boolean for whether to parallelize subsampling and p-value generation step
+  #   p_cutoff: p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be
+  #             calculated for future merges involving current group.
   # Output:
   #   retLst: list of results from bipartite hierarchical clustering, containing
   #     hclustObj: dendrogram class of resulting dendrogram
   #     groupMerges: list of groups for each merge, in order of merge
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
   groupNames <- names(groups)
-  
+
   print("Computing starting dissimilarity matrix...")
   # construct matrix B representing bipartite relationship
   bgraphs <- lapply(groups, function(gid) {
     mat1 <- X[gid, ]
     mat2 <- Y[gid, ]
-    
+
     constructBipartiteGraph(mat1, mat2, n_subsample, subsampling_ratio, parallel = parallel)
   })
-  
+
   # construct starting dissimilarity matrix
   n_groups <- length(groups)
   dissMat <- matrix(NA, nrow = n_groups, ncol = n_groups)
@@ -119,56 +122,62 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
       dissMat[j, i] <- dissMat[i, j]
     }
   }
-  hclustObj = hclust(as.dist(dissMat), method = link)
-  hclustObj$labels = names(groups)
+  hclustObj <- hclust(as.dist(dissMat), method = link)
+  hclustObj$labels <- names(groups)
   retLst <- list(hclustObj = hclustObj)
 
   # create groupMerges
-  groupMerges = list()
-  merge = hclustObj$merge
-  n_merges = nrow(merge)
+  groupMerges <- list()
+  merge <- hclustObj$merge
+  n_merges <- nrow(merge)
   for (i in seq(n_merges)) {
-    groupMerges[[length(groupMerges) + 1]] = newMergedGroup(merge[i, 1], merge[i, 2], groups, groupMerges)
+    groupMerges[[length(groupMerges) + 1]] <- newMergedGroup(merge[i, 1], merge[i, 2], groups, groupMerges)
   }
-  retLst[["groupMerges"]] = groupMerges
+  retLst[["groupMerges"]] <- groupMerges
 
   # p-value
   if (p.value) {
-    nodePvals = list()
+    nodePvals <- list()
     for (i in seq(n_merges)) {
-      rows1 = getMergeGroupRows(merge[i, 1], groups, groupMerges)
-      rows2 = getMergeGroupRows(merge[i, 2], groups, groupMerges)
-
-      X1 = X[rows1, ]
-      Y1 = Y[rows1, ]
-      X2 = X[rows2, ]
-      Y2 = Y[rows2, ]
-
-      if (merge[i, 1] < 0 && merge[i, 2] < 0) {
-        d = dissMat[-merge[i, 1], -merge[i, 2]]
+      print(paste0("Compute p-value for merge ", i, "/", n_merges))
+      m1 <- merge[i, 1]
+      m2 <- merge[i, 2]
+      if ((m1 > 0 && (nodePvals[[m1]] > p_cutoff || is.na(nodePvals[[m1]]))) || (m2 > 0 && (nodePvals[[m2]] > p_cutoff || is.na(nodePvals[[m2]])))) {
+        nodePvals[[i]] <- NA
       } else {
-        B1 = constructBipartiteGraph(X1, Y1, n_subsample = 1, 
-          subsampling_ratio = 1, parallel = FALSE)
-        B2 = constructBipartiteGraph(X2, Y2, n_subsample = 1, 
-          subsampling_ratio = 1, parallel = FALSE)
-        d = matrixDissimilarity(B1, B2)
+        rows1 <- getMergeGroupRows(m1, groups, groupMerges)
+        rows2 <- getMergeGroupRows(m2, groups, groupMerges)
+
+        X1 <- X[rows1, ]
+        Y1 <- Y[rows1, ]
+        X2 <- X[rows2, ]
+        Y2 <- Y[rows2, ]
+
+        if (merge[i, 1] < 0 && merge[i, 2] < 0) {
+          d <- dissMat[-m1, -m2]
+        } else {
+          B1 <- constructBipartiteGraph(X1, Y1, n_subsample = 1,
+                                       subsampling_ratio = 1, parallel = FALSE)
+          B2 <- constructBipartiteGraph(X2, Y2, n_subsample = 1,
+                                       subsampling_ratio = 1, parallel = FALSE)
+          d <- matrixDissimilarity(B1, B2)
+        }
+
+        dissimilarities <- null_distri(X1, Y1, X2, Y2)
+        nodePvals[[i]] <- p_value(d, dissimilarities)
       }
-
-      dissimilarities = null_distri(X1, Y1, X2, Y2)
-      nodePvals[[i]] = p_value(d, dissimilarities)
-
       print(paste0("P-value for merge ", i, "/", n_merges, " complete"))
     }
     retLst[["nodePvals"]] = nodePvals
   }
-  
+
   return(retLst)
 }
 
 #' Only scales features (columns) with positive variance
 #'
 #' @param mat an n x p matrix (gene expression or drug sensitivity)
-#' @return an n x p matrix with columns with positive variance scaled 
+#' @return an n x p matrix with columns with positive variance scaled
 #' @export
 scale_features <- function(mat) {
   # Only scales features (columns) with positive variance
@@ -218,9 +227,9 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
   }
 
   n_cores <- parallel::detectCores() - 1
-  if (parallel && n_cores > 0) {
+  if (parallel && n_cores > 0 && n_subsample > 1) {
     cl <- parallel::makeCluster(n_cores)
-    parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q", 
+    parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q",
       "subsampling_ratio"), envir = environment())
     parallel::clusterSetRNGStream(cl = cl)
 
@@ -236,7 +245,7 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
 
       # don't use center, scale in scca() because if an entire column is 0, NaNs will be produced
       scca_rlt <- scca::scca(mat1_sub, mat2_sub, penalty = "LASSO") # might need to tune parameters
-      
+
       vec_p <- scca_rlt$A[, 1]
       vec_q <- scca_rlt$B[, 1]
 
@@ -256,13 +265,13 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
       # only standardize features with positive variance
       mat1_sub <- scale_features(mat1_sub)
       mat2_sub <- scale_features(mat2_sub)
-      
+
       # don't use center, scale in scca() because if an entire column is 0, NaNs will be produced
       scca_rlt <- scca::scca(mat1_sub, mat2_sub, penalty = "LASSO") # might need to tune parameters
-      
+
       vec_p <- scca_rlt$A[, 1]
       vec_q <- scca_rlt$B[, 1]
-      
+
       return(c(outer(vec_p, vec_q)))
       }) %>% rowMeans() %>% matrix(nrow = p, ncol = q)
   }
@@ -312,7 +321,7 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
   #   dissimilarities: vector of length n.perm of null dissimilarity measures
   X1 = scale_features(X1)
   Y1 = scale_features(Y1)
-  
+
   X2 = scale_features(X2)
   Y2 = scale_features(Y2)
 
@@ -322,20 +331,20 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
     parallel::clusterExport(cl, c("X1", "Y1", "X2", "Y2", "matrixDissimilarity"),
       envir = environment())
     parallel::clusterSetRNGStream(cl = cl)
-  
+
     dissimilarities <- parallel::parSapply(cl = cl, seq(n.perm), function (x) {
       sampleIdx1 <- sample(seq(nrow(X1)), size = nrow(X1), replace = FALSE)
       sampleIdx2 <- sample(seq(nrow(X2)), size = nrow(X2), replace = FALSE)
-      
+
       X1.b <- X1[sampleIdx1, ]
       X2.b <- X2[sampleIdx2, ]
-      
+
       scca1 <- scca::scca(X1.b, Y1, penalty = "LASSO")
       scca2 <- scca::scca(X2.b, Y2, penalty = "LASSO")
-      
+
       B1 <- outer(c(scca1$A), c(scca1$B))
       B2 <- outer(c(scca2$A), c(scca2$B))
-      
+
       return(matrixDissimilarity(B1, B2))
     }, simplify = TRUE)
     parallel::stopCluster(cl)
@@ -343,16 +352,16 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
     dissimilarities <- replicate(n.perm, {
       sampleIdx1 <- sample(seq(nrow(X1)), size = nrow(X1), replace = FALSE)
       sampleIdx2 <- sample(seq(nrow(X2)), size = nrow(X2), replace = FALSE)
-    
+
       X1.b <- X1[sampleIdx1, ]
       X2.b <- X2[sampleIdx2, ]
-      
+
       scca1 <- scca::scca(X1.b, Y1, penalty = "LASSO")
       scca2 <- scca::scca(X2.b, Y2, penalty = "LASSO")
-      
+
       B1 <- outer(c(scca1$A), c(scca1$B))
       B2 <- outer(c(scca2$A), c(scca2$B))
-      
+
       return(matrixDissimilarity(B1, B2))
       }, simplify = TRUE)
   }
