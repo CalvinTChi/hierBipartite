@@ -227,7 +227,7 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
   }
 
   n_cores <- parallel::detectCores() - 1
-  if (parallel && n_cores > 0 && n_subsample > 1) {
+  if (parallel && n_cores > 1 && n_subsample > 1) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q",
       "subsampling_ratio"), envir = environment())
@@ -326,7 +326,7 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
   Y2 = scale_features(Y2)
 
   n_cores <- parallel::detectCores() - 1
-  if (parallel && n_cores > 0) {
+  if (parallel && n_cores > 1) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("X1", "Y1", "X2", "Y2", "matrixDissimilarity"),
       envir = environment())
