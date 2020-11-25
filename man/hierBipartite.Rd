@@ -24,6 +24,8 @@ hierBipartite(
 
 \item{groups}{a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has samples 1, 2, 3, and group 2 has samples 4, 5, 6.}
 
+\item{link}{string indicating link function as input to hclust. One of "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid".}
+
 \item{n_subsample}{number of subsampling to generate matrix B (see paper)}
 
 \item{subsampling_ratio}{fraction of samples to sample for subsampling to generate matrix B (see paper)}

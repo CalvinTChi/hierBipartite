@@ -69,6 +69,7 @@ newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
 #' @param X an n x p matrix (e.g. for gene expression)
 #' @param Y an n x q matrix (e.g. for drug sensitivity)
 #' @param groups a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has samples 1, 2, 3, and group 2 has samples 4, 5, 6.
+#' @param link string indicating link function as input to hclust. One of "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid".
 #' @param n_subsample number of subsampling to generate matrix B (see paper)
 #' @param subsampling_ratio fraction of samples to sample for subsampling to generate matrix B (see paper)
 #' @param p.value boolean for whether to generate p-values for each merge
