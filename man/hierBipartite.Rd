@@ -41,6 +41,7 @@ list of results from bipartite hierarchical clustering, containing
         (1) hclustObj: dendrogram class of resulting dendrogram,
         (2) groupMerges: list of groups for each merge, in order of merge,
         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
+        (4) D: dissimilarity matrix
 }
 \description{
 Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the

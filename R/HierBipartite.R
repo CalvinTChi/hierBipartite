@@ -79,6 +79,7 @@ newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
 #'         (1) hclustObj: dendrogram class of resulting dendrogram,
 #'         (2) groupMerges: list of groups for each merge, in order of merge,
 #'         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
+#'         (4) D: dissimilarity matrix
 #' @export
 hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = FALSE, p_cutoff = 0.10) {
   # Main bipartite hierarchial clustering algorithm
@@ -101,6 +102,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #     hclustObj: dendrogram class of resulting dendrogram
   #     groupMerges: list of groups for each merge, in order of merge
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
+  #     D: dissimilarity matrix 
   groupNames <- names(groups)
 
   print("Computing starting dissimilarity matrix...")
@@ -125,6 +127,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   hclustObj <- hclust(as.dist(dissMat), method = link)
   hclustObj$labels <- names(groups)
   retLst <- list(hclustObj = hclustObj)
+  retLst[["D"]] <- dissMat
 
   # create groupMerges
   groupMerges <- list()
