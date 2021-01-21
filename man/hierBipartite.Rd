@@ -46,6 +46,6 @@ list of results from bipartite hierarchical clustering, containing
         (4) D: dissimilarity matrix
 }
 \description{
-Main bipartite hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
+Main bipartite graph-based hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
 hierBipartite package.
 }

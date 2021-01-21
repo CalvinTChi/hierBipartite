@@ -27,6 +27,7 @@ Imports:
     scca,
     magrittr,
     irlba
+Remotes: tomwhoooo/scca_3.0
 biocViews: 
     Clustering, FeatureExtraction, Pharmacogenomics, GeneExpression
 RoxygenNote: 7.1.1

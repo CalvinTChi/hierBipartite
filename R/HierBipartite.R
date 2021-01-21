@@ -201,6 +201,7 @@ scale_features <- function(mat) {
 #'
 #' Constructs matrix B containing information of bipartite relationship between mat1 and mat2 (see paper)
 #'
+#' @importFrom magrittr %>%
 #' @param mat1 an n x p matrix (e.g. for gene expression)
 #' @param mat2 an n x q matrix (e.g. for drug sensitivity)
 #' @param n_subsample number of times to perform subsampling to generate B

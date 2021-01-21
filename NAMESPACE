@@ -9,5 +9,4 @@ export(newMergedGroup)
 export(null_distri)
 export(p_value)
 export(scale_features)
-
 importFrom(magrittr,"%>%")
