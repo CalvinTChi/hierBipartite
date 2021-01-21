@@ -103,7 +103,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #     hclustObj: dendrogram class of resulting dendrogram
   #     groupMerges: list of groups for each merge, in order of merge
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
-  #     D: dissimilarity matrix 
+  #     D: dissimilarity matrix
   groupNames <- names(groups)
 
   print("Computing starting dissimilarity matrix...")
