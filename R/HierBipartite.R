@@ -419,7 +419,7 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
     n <- length(nodePvals)
     index <- 1
     for (i in seq(n)) {
-      if (nodePvals[i] <= p) {
+      if (!is.na(nodePvals[[i]]) && nodePvals[[i]] <= p) {
         nodePvalsFiltered[[toString(index)]] <- nodePvals[[i]]
         groupMergesFiltered[[toString(index)]] <- groupMerges[[i]]
       }
