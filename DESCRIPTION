@@ -1,14 +1,23 @@
 Package: hierBipartite
-Title: Bipartite Hierarchical Clustering
-Version: 0.0.0.9000
+Type: Package
+Title: Bipartite Graph-based Hierarchical Clustering
+Version: 0.0.0
 Authors@R: 
     person(given = "Calvin",
            family = "Chi",
            role = c("aut", "cre"),
            email = "calvin.chi@berkeley.edu",
            comment = c(ORCID = "0000-0002-4757-0559"))
+Maintainer: Calvin Chi <calvin.chi@berkeley.edu>
 Description: 
-License: What license it uses
+    R package for performing bipartite graph-based hierarchical clustering on 
+    pharmacogenomic data. Specifically, sparse canonical correlation 
+    analysis is first applied to extract gene-drug associations for each group
+    of cell lines. Then, a nuclear norm-based dissimilarity measure is used to
+    construct a dissimilarity matrix between groups based on the extracted
+    associations. Finally, hierarchical clustering is applied to determine the 
+    hierarchical relationship.
+License: MIT
 Encoding: UTF-8
 LazyData: true
 Imports:
@@ -18,6 +27,8 @@ Imports:
     scca,
     magrittr,
     irlba
+biocViews: 
+    Clustering, FeatureExtraction, Pharmacogenomics, GeneExpression
 RoxygenNote: 7.1.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
