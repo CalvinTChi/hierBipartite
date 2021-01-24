@@ -77,8 +77,8 @@ newMergedGroup <- function(idx1, idx2, groups, groupMerges) {
 #' @param parallel boolean for whether to parallelize subsampling and p-value generation step
 #' @param p_cutoff p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be calculated for future merges involving current group.
 #' @return list of results from bipartite hierarchical clustering, containing
-#'         (1) hclustObj: dendrogram class of resulting dendrogram,
-#'         (2) groupMerges: list of groups for each merge, in order of merge,
+#'         (1) hclustObj: hclust object,
+#'         (2) groupMerges: list of clusters after each merge, in order of merge. Each cluster is indicated by a vector of cell line groups,
 #'         (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
 #'         (4) D: dissimilarity matrix
 #' @export
@@ -100,7 +100,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #             calculated for future merges involving current group.
   # Output:
   #   retLst: list of results from bipartite hierarchical clustering, containing
-  #     hclustObj: dendrogram class of resulting dendrogram
+  #     hclustObj: hclust object
   #     groupMerges: list of groups for each merge, in order of merge
   #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
   #     D: dissimilarity matrix
@@ -425,7 +425,8 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
       }
       index <- index + 1
     }
-    retLst <- list("nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]], "groupMerges" = groupMergesFiltered)
+    retLst <- list("nodePvals" = nodePvalsFiltered, "hclustObj" = results[["hclustObj"]], 
+      "groupMerges" = groupMergesFiltered, "D" = results[["D"]])
     return(retLst)
   }
 }
