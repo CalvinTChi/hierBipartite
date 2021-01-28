@@ -2,7 +2,7 @@
 % Please edit documentation in R/HierBipartite.R
 \name{getSignificantMergedGroups}
 \alias{getSignificantMergedGroups}
-\title{Significant Merges}
+\title{Select Significant Results from 'HierBipartite'}
 \usage{
 getSignificantMergedGroups(results, p = 0.05)
 }

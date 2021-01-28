@@ -2,7 +2,7 @@
 % Please edit documentation in R/HierBipartite.R
 \name{p_value}
 \alias{p_value}
-\title{P-value}
+\title{P-value of Similarity in Gene-drug Associations}
 \usage{
 p_value(dissimilarity, dissimilarities)
 }

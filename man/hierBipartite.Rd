@@ -2,7 +2,7 @@
 % Please edit documentation in R/HierBipartite.R
 \name{hierBipartite}
 \alias{hierBipartite}
-\title{Bipartite Hierarchical Clustering}
+\title{Bipartite Graph-based Hierarchical Clustering}
 \usage{
 hierBipartite(
   X,
@@ -40,10 +40,14 @@ hierBipartite(
 }
 \value{
 list of results from bipartite hierarchical clustering, containing
-        (1) hclustObj: hclust object,
-        (2) groupMerges: list of clusters after each merge, in order of merge. Each cluster is indicated by a vector of cell line groups,
-        (3) nodePvals: list of p-value of each new merge, in order of merge if p.value = TRUE.
-        (4) D: dissimilarity matrix
+\itemize{
+  \item hclustObj: hclust object
+  \item groupMerges: list of clusters after each merge, in order of merge.
+  Each cluster is indicated by a vector of cell line groups
+  \item nodePvals: list of p-value of each new merge,
+  in order of merge if p.value = TRUE.
+  \item D: dissimilarity matrix
+}
 }
 \description{
 Main bipartite graph-based hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the

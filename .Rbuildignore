@@ -1,4 +1,6 @@
 ^HierBipartite\.Rproj$
 ^\.Rproj\.user$
-^doc$
 ^Meta$
+^doc$
+^LICENSE\.md$
+^cran-comments\.md$
