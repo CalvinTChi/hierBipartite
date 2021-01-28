@@ -116,7 +116,7 @@ par(mar = c(2,2,2,20))
 plot(as.dendrogram(hclustObj), horiz = TRUE)
 ```
 
-<img src="../man/figures/dendrogram_uncolored-1.png" title="plot of chunk dendrogram_uncolored" alt="plot of chunk dendrogram_uncolored" style="display: block; margin: auto;" />
+<img src="./figures/dendrogram_uncolored-1.png" title="plot of chunk dendrogram_uncolored" alt="plot of chunk dendrogram_uncolored" style="display: block; margin: auto;" />
 
 We now illustrate how to answer some common questions about the results after the method is finished. To get the groups in the third merge and corresponding p-value:
 
@@ -179,7 +179,7 @@ drugCoefficients = sccaResults$B[, 1]
 plot(geneCoefficients, xlab = "gene index", ylab = "SCCA coefficient")
 ```
 
-<img src="../man/figures/SCCA_coefficients-1.png" title="plot of chunk SCCA_coefficients" alt="plot of chunk SCCA_coefficients" style="display: block; margin: auto;" />
+<img src="./figures/SCCA_coefficients-1.png" title="plot of chunk SCCA_coefficients" alt="plot of chunk SCCA_coefficients" style="display: block; margin: auto;" />
 
 Color branches of dendrogram corresponding to merges with p-value less than or equal to threshold of 0.10.
 
@@ -195,7 +195,7 @@ par(mar = c(2,2,2,20))
 plot(dendro, horiz = TRUE)
 ```
 
-<img src="../man/figures/dendrogram_colored-1.png" title="plot of chunk dendrogram_colored" alt="plot of chunk dendrogram_colored" style="display: block; margin: auto;" />
+<img src="./figures/dendrogram_colored-1.png" title="plot of chunk dendrogram_colored" alt="plot of chunk dendrogram_colored" style="display: block; margin: auto;" />
 
 Finally, the custom function `getSignificantMergedGroups()` selects only clusters with a merge p-value at or below a threshold.
 

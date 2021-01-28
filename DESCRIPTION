@@ -3,7 +3,7 @@ Type: Package
 Title: Bipartite Graph-Based Hierarchical Clustering
 Version: 0.0.0
 Authors@R: person("Calvin", "Chi", email = "calvin.chi@berkeley.edu",
-  role = c("aut", "cre"))
+  role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-4757-0559"))
 Author: Calvin Chi [aut, cre, cph]
 Maintainer: Calvin Chi <calvin.chi@berkeley.edu>
 Description: 

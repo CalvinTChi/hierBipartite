@@ -2,7 +2,7 @@
 % Please edit documentation in R/HierBipartite.R
 \name{constructBipartiteGraph}
 \alias{constructBipartiteGraph}
-\title{Construct Bipartite Graph}
+\title{Construct Bipartite Graph of Gene-drug Association Patterns}
 \usage{
 constructBipartiteGraph(
   mat1,
