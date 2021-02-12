@@ -7,13 +7,34 @@
 getSignificantMergedGroups(results, p = 0.05)
 }
 \arguments{
-\item{results}{list of results from bipartite hierarchical clustering}
+\item{results}{list of results from bipartite graph-based hierarchical clustering}
 
-\item{p}{p-value to filter merged groups by}
+\item{p}{p-value cutoff}
 }
 \value{
-list of results from bipartite hierarchical clustering filtered by p-value
+list of results from bipartite graph-based hierarchical clustering, but only with clusters with p-value at or below p-value cutoff
 }
 \description{
-Filters bipartite hierarchical clustering merged groups by p-value
+Selects clusters from bipartite graph-based hierarchical clustering with p-value less than or equal to a p-value cutoff.
+}
+\examples{
+# sample bipartite graph-based hierarchical clustering of three groups
+data(ctrp2)
+
+groups = ctrp2$groups
+X = ctrp2$X
+Y = ctrp2$Y
+
+groupNames = names(groups)
+groupSmall = groups[groupNames[1:3]]
+
+\dontrun{
+result = hierBipartite(X, Y, groupSmall)
+
+# set fictitious p-values, with one cluster with p-value less than the cutoff
+# and the other not
+result$nodePvals = list(0.03, 0.12)
+getSignificantMergedGroups(result, p = 0.05)
+}
+
 }

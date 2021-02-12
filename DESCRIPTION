@@ -1,19 +1,26 @@
 Package: hierBipartite
 Type: Package
 Title: Bipartite Graph-Based Hierarchical Clustering
-Version: 0.0.0
-Authors@R: person("Calvin", "Chi", email = "calvin.chi@berkeley.edu",
-  role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0002-4757-0559"))
-Author: Calvin Chi [aut, cre, cph]
+Version: 0.0.2
+Authors@R: c(person("Calvin", "Chi", email = "calvin.chi@berkeley.edu", role = c("aut", "cre", "cph")),
+           person("Woojoo", "Lee", role = c("ctb")),
+           person("Donghwan", "Lee", role = c("ctb")),
+           person("Youngjo", "Lee", role = c("ctb")),
+           person("Yudi", "Pawitan", role = c("ctb")))
 Maintainer: Calvin Chi <calvin.chi@berkeley.edu>
 Description: 
-    R package for performing bipartite graph-based hierarchical clustering on 
-    pharmacogenomic data. To start, sparse canonical correlation 
-    analysis is first applied to extract gene-drug associations for each group
-    of cell lines. Then, a nuclear norm-based dissimilarity measure is used to
-    construct a dissimilarity matrix between groups based on the extracted
-    associations. Finally, hierarchical clustering is applied to the cell line 
-    groups.
+    Bipartite graph-based hierarchical clustering, developed for pharmacogenomic 
+    datasets and datasets sharing the same data structure. The goal is to 
+    construct a hierarchical clustering of groups of samples based on 
+    association patterns between two sets of variables. In the context of
+    pharmacogenomic datasets, the samples are cell lines, and the two sets of 
+    variables are typically expression levels and drug sensitivity values. 
+    For this method, sparse canonical correlation analysis from 
+    Lee, W., Lee, D., Lee, Y. and Pawitan, Y. (2011) <doi:10.2202/1544-6115.1638> 
+    is first applied to extract association patterns for each group of samples. 
+    Then, a nuclear norm-based dissimilarity measure is used to construct a 
+    dissimilarity matrix between groups based on the extracted associations. 
+    Finally, hierarchical clustering is applied.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -22,5 +29,5 @@ Imports:
     magrittr,
     irlba
 RoxygenNote: 7.1.1
-Suggests: knitr, rmarkdown
+Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr

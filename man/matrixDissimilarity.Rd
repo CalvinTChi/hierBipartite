@@ -7,13 +7,38 @@
 matrixDissimilarity(B1, B2)
 }
 \arguments{
-\item{B1}{a p x q matrix containing information of bipartite relationship}
+\item{B1}{first p x q bipartite graph edge weight matrix}
 
-\item{B2}{a p x q matrix containing information of bipartite relationship}
+\item{B2}{second p x q bipartite graph edge weight matrix}
 }
 \value{
-nucleus norm-based dissimilarity
+nuclear norm-based dissimilarity
 }
 \description{
-Computes nucleus norm-based dissimilarity measure between two matrices
+Computes nuclear norm-based dissimilarity measure between two matrices.
+}
+\examples{
+# Compute matrix dissimilarity in edge weight matrix between squamous cell
+# carcinoma, esophagus and squamous cell carcinoma, upper aerodigestive
+data(ctrp2)
+
+groups = ctrp2$groups
+X = ctrp2$X
+Y = ctrp2$Y
+
+x1 = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+y1 = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+
+\dontrun{
+B1 = constructBipartiteGraph(x1, y1)
+}
+
+x2 = X[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+y2 = Y[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+
+\dontrun{
+B2 = constructBipartiteGraph(x2, y2)
+matrixDissimilarity(B1, B2)
+}
+
 }

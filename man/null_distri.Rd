@@ -4,24 +4,46 @@
 \alias{null_distri}
 \title{Null distribution of dissimilarity measures}
 \usage{
-null_distri(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE)
+null_distri(X1, Y1, X2, Y2, n.perm = 100, parallel = FALSE, maxCores = 7)
 }
 \arguments{
-\item{X1}{an n x p matrix (e.g. for gene expression) for group 1}
+\item{X1}{an n x p matrix of variable set 1 (e.g. gene expression) from group 1}
 
-\item{Y1}{an n x q matrix (e.g. for drug sensitivity) for group 1}
+\item{Y1}{an n x q matrix of variable set 2 (e.g. drug sensitivity) from group 1}
 
-\item{X2}{an n x p matrix (e.g. for gene expression) for group 2}
+\item{X2}{an n x p matrix of variable set 1 (e.g. gene expression) from group 2}
 
-\item{Y2}{an n x q matrix (e.g. for drug sensitivity) for group 2}
+\item{Y2}{an n x q matrix of varaible set 2 (e.g. drug sensitivity) from group 2}
 
 \item{n.perm}{number of null dissimilarity measures to generate}
 
-\item{parallel}{boolean for whether to parallelize subsampling}
+\item{parallel}{boolean for whether to parallelize permutation}
+
+\item{maxCores}{maximum number of cores to use (only applicable when parallel = TRUE)}
 }
 \value{
 vector of length n.perm of null dissimilarity measures
 }
 \description{
-Generates null distribution of dissimilarity measures between (X1, Y1) and (X2, Y2)
+Generates null distribution of dissimilarity measures between group 1 (X1, Y1) and group 2 (X2, Y2).
+}
+\examples{
+# Get data for group squamous cell carcinoma, esophagus and for group
+# squamous cell carcinoma, upper aerodigestive
+data(ctrp2)
+
+groups = ctrp2$groups
+X = ctrp2$X
+Y = ctrp2$Y
+
+x1 = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+y1 = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+
+x2 = X[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+y2 = Y[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+
+\dontrun{
+dissimilarities = null_distri(x1, y1, x2, y2, n.perm = 100)
+}
+
 }

@@ -23,7 +23,7 @@
 #'
 #' @references
 #' Barretina, J., et al. (2012). The cancer cell line encyclopedia enables predictive modelling of anticancer drug sensitivity.
-#' Nature, 483(7391), 603–607. (\href{https://www.ncbi.nlm.nih.gov/pubmed/22460905}{PubMed})
+#' Nature, 483(7391), 603–607. (\href{https://pubmed.ncbi.nlm.nih.gov/22460905}{PubMed})
 #'
 #' Seashore-Ludlow, B., et al. (2015). Harnessing connectivity in a large-scale small-molecule sensitivity dataset.
 #' Cancer discovery, 5(11), 1210-1223. (\href{https://pubmed.ncbi.nlm.nih.gov/26482930}{PubMed})

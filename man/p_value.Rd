@@ -15,5 +15,13 @@ p_value(dissimilarity, dissimilarities)
 p-value
 }
 \description{
-Computes p-value as number of null dissimilarities less than or equal to observed dissimilarity
+Computes p-value as number of null dissimilarities less than or equal to observed dissimilarity.
+}
+\examples{
+# simulate null distribution of dissimilarities
+dissimilarities = runif(100, min = 0, max = 1)
+
+d = 0.10
+p_value(d, dissimilarities)
+
 }

@@ -2,30 +2,53 @@
 % Please edit documentation in R/HierBipartite.R
 \name{constructBipartiteGraph}
 \alias{constructBipartiteGraph}
-\title{Construct Bipartite Graph of Gene-drug Association Patterns}
+\title{Construct Bipartite Graph Edge Weight Matrix of Gene-drug Association Patterns}
 \usage{
 constructBipartiteGraph(
   mat1,
   mat2,
   n_subsample = 1,
   subsampling_ratio = 1,
-  parallel = TRUE
+  parallel = FALSE,
+  maxCores = 7
 )
 }
 \arguments{
-\item{mat1}{an n x p matrix (e.g. for gene expression)}
+\item{mat1}{an n x p matrix of variable set 1 (e.g. gene expression)}
 
-\item{mat2}{an n x q matrix (e.g. for drug sensitivity)}
+\item{mat2}{an n x q matrix of variable set 2 (e.g. drug sensitivity)}
 
 \item{n_subsample}{number of times to perform subsampling to generate B}
 
 \item{subsampling_ratio}{fraction of samples to subsample each time}
 
 \item{parallel}{boolean for whether to parallelize subsampling}
+
+\item{maxCores}{maximum number of cores to use (only applicable when parallel = TRUE)}
 }
 \value{
-a p x q matrix containing information of bipartite relationship
+a p x q matrix of bipartite graph edge weights
 }
 \description{
-Constructs matrix B containing information of bipartite relationship between mat1 and mat2 (see paper)
+Constructs edge weight matrix B representing association between set of variables in mat1 and set of variables in mat2 (see paper).
+}
+\examples{
+# Extract bipartite edge weight matrix B for cell lines from the
+# squamous cell carcinoma, esophagus group
+data(ctrp2)
+
+groups = ctrp2$groups
+X = ctrp2$X
+Y = ctrp2$Y
+
+x = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+y = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+
+# Extract bipartite edge weight matrix B with subsampling
+\dontrun{
+B = constructBipartiteGraph(x, y, n_subsample = 100,
+                            subsampling_ratio = 0.90,
+                            parallel = TRUE, maxCores = 2)
+}
+
 }

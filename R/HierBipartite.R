@@ -1,34 +1,62 @@
 #' Bipartite Graph-based Hierarchical Clustering
 #'
-#' Main bipartite graph-based hierarchial clustering algorithm. Execute browseVignettes("hierBipartite") or visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
+#' Main bipartite graph-based hierarchial clustering algorithm. Visit \href{https://calvintchi.github.io/html/hierBipartite}{here} for vignette on using the
 #' hierBipartite package.
 #' @importFrom stats var hclust as.dist median sd
 #'
-#' @param X an n x p matrix (e.g. for gene expression)
-#' @param Y an n x q matrix (e.g. for drug sensitivity)
+#' @param X an n x p matrix of variable set 1 (e.g. gene expression)
+#' @param Y an n x q matrix of variable set 2 (e.g. drug sensitivity)
 #' @param groups a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has samples 1, 2, 3, and group 2 has samples 4, 5, 6.
-#' @param link string indicating link function as input to hclust. One of "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid".
+#' @param link string indicating link function as input to hclust(). One of "ward.D", "ward.D2", "single", "complete", "average", "mcquitty", "median", "centroid".
 #' @param n_subsample number of subsampling to generate matrix B (see paper)
 #' @param subsampling_ratio fraction of samples to sample for subsampling to generate matrix B (see paper)
 #' @param p.value boolean for whether to generate p-values for each merge
 #' @param n_perm number of permutations for generating p-values. Ignored if p.value = FALSE
 #' @param parallel boolean for whether to parallelize subsampling and p-value generation step
-#' @param p_cutoff p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be calculated for future merges involving current group.
-#' @return list of results from bipartite hierarchical clustering, containing
+#' @param maxCores maximum number of cores to use (only applicable when parallel = TRUE)
+#' @param p_cutoff p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be calculated for future merges involving current group. Ignored if p.value = FALSE.
+#' @return list of results from bipartite graph-based hierarchical clustering, containing up to
 #' \itemize{
 #'   \item hclustObj: hclust object
 #'   \item groupMerges: list of clusters after each merge, in order of merge.
 #'   Each cluster is indicated by a vector of cell line groups
 #'   \item nodePvals: list of p-value of each new merge,
-#'   in order of merge if p.value = TRUE.
+#'   in order of merge. Only available if p.value = TRUE
 #'   \item D: dissimilarity matrix
 #' }
+#' @examples
+#' # Get a small subset of the test dataset
+#' data(ctrp2)
+#'
+#' groups = ctrp2$groups
+#' X = ctrp2$X
+#' Y = ctrp2$Y
+#'
+#' groupNames = names(groups)
+#' groupSmall = groups[groupNames[1:3]]
+#'
+#' \dontrun{
+#' # Basic call of hierBipartite() on small test dataset
+#' result0 = hierBipartite(X, Y, groupSmall)
+#'
+#' # Calling hierBipartite() with subsampling
+#' result1 = hierBipartite(X, Y, groupSmall, n_subsample = 100, subsampling_ratio = 0.90)
+#'
+#' # Calling hierBipartite() with p-value generation
+#' result2 = hierBipartite(X, Y, groupSmall, n_perm = 100, p.value = TRUE, p_cutoff = 0.10)
+#'
+#' # Calling hierBipartite() with both subsampling and p-value generation (expensive)
+#' result3 = hierBipartite(X, Y, groupSmall, n_subsample = 100, subsampling_ratio = 0.90,
+#'                         n_perm = 100, p.value = TRUE, p_cutoff = 0.10)
+#' }
+#'
 #' @export
-hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE, n_perm = 100, parallel = FALSE, p_cutoff = 0.10) {
-  # Main bipartite hierarchial clustering algorithm
+hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsampling_ratio = 1, p.value = FALSE,
+                          n_perm = 100, parallel = FALSE, maxCores = 7, p_cutoff = 0.10) {
+  # Main bipartite graph-based hierarchial clustering algorithm
   # Input:
-  #   X: an n x p matrix (e.g. for gene expression)
-  #   Y: an n x q matrix (e.g. for drug sensitivity)
+  #   X: an n x p matrix of variable set 1 (e.g. gene expression)
+  #   Y: an n x q matrix of variable set 2 (e.g. drug sensitivity)
   #   link: string indicating link function as input to hclust. One of "ward.D", "ward.D2", "single", "complete", "average",
   #         "mcquitty", "median", "centroid".
   #   groups: a list of starting group membership (e.g. list("1" = c(1,2,3), "2" = c(4,5,6)) means group 1 has
@@ -38,13 +66,14 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   #   p.value: boolean for whether to generate p-values for each merge
   #   n_perm: number of permutations for generating p-values. Ignored if p.value = FALSE
   #   parallel: boolean for whether to parallelize subsampling and p-value generation step
+  #   maxCores: maximum number of cores to use (only applicable when parallel = TRUE)
   #   p_cutoff: p-value cutoff that determines whether merge is significant. If p-value > p_cutoff, p-values will not be
   #             calculated for future merges involving current group.
   # Output:
-  #   retLst: list of results from bipartite hierarchical clustering, containing
+  #   retLst: list of results from bipartite graph-based hierarchical clustering, containing up to
   #     hclustObj: hclust object
   #     groupMerges: list of groups for each merge, in order of merge
-  #     nodePvals: list p-value of each new merge, in order of merge if p.value = TRUE
+  #     nodePvals: list p-value of each new merge, in order of merge. Only available if p.value = TRUE
   #     D: dissimilarity matrix
   groupNames <- names(groups)
 
@@ -54,7 +83,7 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
     mat1 <- X[gid, ]
     mat2 <- Y[gid, ]
 
-    constructBipartiteGraph(mat1, mat2, n_subsample, subsampling_ratio, parallel = parallel)
+    constructBipartiteGraph(mat1, mat2, n_subsample, subsampling_ratio, parallel = parallel, maxCores = maxCores)
   })
 
   # construct starting dissimilarity matrix
@@ -102,14 +131,12 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
         if (merge[i, 1] < 0 && merge[i, 2] < 0) {
           d <- dissMat[-m1, -m2]
         } else {
-          B1 <- constructBipartiteGraph(X1, Y1, n_subsample = 1,
-                                       subsampling_ratio = 1, parallel = FALSE)
-          B2 <- constructBipartiteGraph(X2, Y2, n_subsample = 1,
-                                       subsampling_ratio = 1, parallel = FALSE)
+          B1 <- constructBipartiteGraph(X1, Y1, n_subsample = 1, subsampling_ratio = 1, parallel = FALSE)
+          B2 <- constructBipartiteGraph(X2, Y2, n_subsample = 1, subsampling_ratio = 1, parallel = FALSE)
           d <- matrixDissimilarity(B1, B2)
         }
 
-        dissimilarities <- null_distri(X1, Y1, X2, Y2)
+        dissimilarities <- null_distri(X1, Y1, X2, Y2, parallel = parallel, maxCores = maxCores)
         nodePvals[[i]] <- p_value(d, dissimilarities)
       }
       print(paste0("P-value for merge ", i, "/", n_merges, " complete"))
@@ -120,28 +147,53 @@ hierBipartite <- function(X, Y, groups, link = "ward.D2", n_subsample = 1, subsa
   return(retLst)
 }
 
-#' Construct Bipartite Graph of Gene-drug Association Patterns
+#' Construct Bipartite Graph Edge Weight Matrix of Gene-drug Association Patterns
 #'
-#' Constructs matrix B containing information of bipartite relationship between mat1 and mat2 (see paper)
+#' Constructs edge weight matrix B representing association between set of variables in mat1 and set of variables in mat2 (see paper).
 #'
 #' @importFrom magrittr %>%
-#' @param mat1 an n x p matrix (e.g. for gene expression)
-#' @param mat2 an n x q matrix (e.g. for drug sensitivity)
+#' @param mat1 an n x p matrix of variable set 1 (e.g. gene expression)
+#' @param mat2 an n x q matrix of variable set 2 (e.g. drug sensitivity)
 #' @param n_subsample number of times to perform subsampling to generate B
 #' @param subsampling_ratio fraction of samples to subsample each time
 #' @param parallel boolean for whether to parallelize subsampling
-#' @return a p x q matrix containing information of bipartite relationship
+#' @param maxCores maximum number of cores to use (only applicable when parallel = TRUE)
+#' @return a p x q matrix of bipartite graph edge weights
+#'
+#' @examples
+#' # Extract bipartite edge weight matrix B for cell lines from the
+#' # squamous cell carcinoma, esophagus group
+#' data(ctrp2)
+#'
+#' groups = ctrp2$groups
+#' X = ctrp2$X
+#' Y = ctrp2$Y
+#'
+#' x = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#' y = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#'
+#' # Extract bipartite edge weight matrix B with subsampling
+#' \dontrun{
+#' B = constructBipartiteGraph(x, y, n_subsample = 100,
+#'                             subsampling_ratio = 0.90,
+#'                             parallel = TRUE, maxCores = 2)
+#' }
+#'
 #' @export
-constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_ratio = 1, parallel = TRUE) {
+constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1,
+                                    subsampling_ratio = 1,
+                                    parallel = FALSE,
+                                    maxCores = 7) {
   # Constructs matrix B containing information of bipartite relationship between mat1 and mat2 (see paper)
   # Input:
-  #   mat1: an n x p matrix (e.g. for gene expression)
-  #   mat2: an n x q matrix (e.g. for drug sensitivity)
+  #   mat1: an n x p matrix of variable set 1 (e.g. gene expression)
+  #   mat2: an n x q matrix of variable set 2 (e.g. drug sensitivity)
   #   n_subsample: number of times to perform subsampling to generate B
   #   subsampling_ratio: fraction of samples to subsample each time
   #   parallel: boolean for whether to parallelize subsampling
+  #   maxCores: maximum number of cores to use (only applicable when parallel = TRUE)
   # Output:
-  #   B: a p x q matrix containing information of bipartite relationship
+  #   B: a p x q matrix of bipartite graph edge weights
   n_samples <- nrow(mat1)
   p <- ncol(mat1)
   q <- ncol(mat2)
@@ -154,7 +206,7 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
     return(outer(c(scca_rlt$A), c(scca_rlt$B)))
   }
 
-  n_cores <- parallel::detectCores() - 1
+  n_cores <- min(parallel::detectCores() - 1, maxCores)
   if (parallel && n_cores > 1 && n_subsample > 1) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("mat1", "mat2", "n_samples", "p", "q",
@@ -208,43 +260,88 @@ constructBipartiteGraph <- function(mat1, mat2, n_subsample = 1, subsampling_rat
 
 #' Matrix dissimilarity
 #'
-#' Computes nucleus norm-based dissimilarity measure between two matrices
+#' Computes nuclear norm-based dissimilarity measure between two matrices.
 #'
-#' @param B1 a p x q matrix containing information of bipartite relationship
-#' @param B2 a p x q matrix containing information of bipartite relationship
-#' @return nucleus norm-based dissimilarity
+#' @param B1 first p x q bipartite graph edge weight matrix
+#' @param B2 second p x q bipartite graph edge weight matrix
+#' @return nuclear norm-based dissimilarity
+#' @examples
+#' # Compute matrix dissimilarity in edge weight matrix between squamous cell
+#' # carcinoma, esophagus and squamous cell carcinoma, upper aerodigestive
+#' data(ctrp2)
+#'
+#' groups = ctrp2$groups
+#' X = ctrp2$X
+#' Y = ctrp2$Y
+#'
+#' x1 = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#' y1 = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#'
+#' \dontrun{
+#' B1 = constructBipartiteGraph(x1, y1)
+#' }
+#'
+#' x2 = X[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+#' y2 = Y[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+#'
+#' \dontrun{
+#' B2 = constructBipartiteGraph(x2, y2)
+#' matrixDissimilarity(B1, B2)
+#' }
+#'
 #' @export
 matrixDissimilarity <- function(B1, B2){
-  # Computes nucleus norm-based dissimilarity measure between two matrices
+  # Computes nuclear norm-based dissimilarity measure between two bipartite graph edge weight matrices
   # Input:
-  #   B1: a p x q matrix containing information of bipartite relationship
-  #   B2: a p x q matrix containing information of bipartite relationship
+  #   B1: first p x q bipartite graph edge weight matrix
+  #   B2: second p x q bipartite graph edge weight matrix
   # Output:
-  #   nucleus norm-based dissimilarity
-  return(sum(irlba::irlba(B1 - B2)$d) / (sum(irlba::irlba(B1)$d) + sum(irlba::irlba(B2)$d)))
+  #   nuclear norm-based dissimilarity
+  return(sum(irlba::irlba(B1 - B2, nv = 2)$d) / (sum(irlba::irlba(B1, nv = 1)$d) + sum(irlba::irlba(B2, nv = 1)$d)))
 }
 
 #' Null distribution of dissimilarity measures
 #'
-#' Generates null distribution of dissimilarity measures between (X1, Y1) and (X2, Y2)
+#' Generates null distribution of dissimilarity measures between group 1 (X1, Y1) and group 2 (X2, Y2).
 #'
-#' @param X1 an n x p matrix (e.g. for gene expression) for group 1
-#' @param Y1 an n x q matrix (e.g. for drug sensitivity) for group 1
-#' @param X2 an n x p matrix (e.g. for gene expression) for group 2
-#' @param Y2 an n x q matrix (e.g. for drug sensitivity) for group 2
+#' @param X1 an n x p matrix of variable set 1 (e.g. gene expression) from group 1
+#' @param Y1 an n x q matrix of variable set 2 (e.g. drug sensitivity) from group 1
+#' @param X2 an n x p matrix of variable set 1 (e.g. gene expression) from group 2
+#' @param Y2 an n x q matrix of varaible set 2 (e.g. drug sensitivity) from group 2
 #' @param n.perm number of null dissimilarity measures to generate
-#' @param parallel boolean for whether to parallelize subsampling
+#' @param parallel boolean for whether to parallelize permutation
+#' @param maxCores maximum number of cores to use (only applicable when parallel = TRUE)
 #' @return vector of length n.perm of null dissimilarity measures
+#' @examples
+#' # Get data for group squamous cell carcinoma, esophagus and for group
+#' # squamous cell carcinoma, upper aerodigestive
+#' data(ctrp2)
+#'
+#' groups = ctrp2$groups
+#' X = ctrp2$X
+#' Y = ctrp2$Y
+#'
+#' x1 = X[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#' y1 = Y[groups[["squamous_cell_carcinoma_esophagus"]], ]
+#'
+#' x2 = X[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+#' y2 = Y[groups[["squamous_cell_carcinoma_upper_aerodigestive"]], ]
+#'
+#' \dontrun{
+#' dissimilarities = null_distri(x1, y1, x2, y2, n.perm = 100)
+#' }
+#'
 #' @export
-null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
+null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = FALSE, maxCores = 7) {
   # Generates null distribution of dissimilarity measures between (X1, Y1) and (X2, Y2)
   # Input:
-  #   X1: an n x p matrix (e.g. for gene expression) for group 1
-  #   Y1: an n x q matrix (e.g. for drug sensitivity) for group 1
-  #   X1: an n x p matrix (e.g. for gene expression) for group 2
-  #   Y1: an n x q matrix (e.g. for drug sensitivity) for group 2
+  #   X1: an n x p matrix of variable set 1 (e.g. gene expression) from group 1
+  #   Y1: an n x q matrix of variable set 2 (e.g. drug sensitivity) from group 1
+  #   X2: an n x p matrix of variable set 1 (e.g. gene expression) from group 2
+  #   Y2: an n x q matrix of varaible set 2 (e.g. drug sensitivity) from group 2
   #   n.perm: number of null dissimilarity measures to generate
-  #   parallel: boolean for whether to parallelize subsampling
+  #   parallel: boolean for whether to parallelize permutation
+  #   maxCores: maximum number of cores to use (only applicable when parallel = TRUE)
   # Output:
   #   dissimilarities: vector of length n.perm of null dissimilarity measures
   X1 = scale_features(X1)
@@ -253,7 +350,7 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
   X2 = scale_features(X2)
   Y2 = scale_features(Y2)
 
-  n_cores <- parallel::detectCores() - 1
+  n_cores <- min(parallel::detectCores() - 1, maxCores)
   if (parallel && n_cores > 1) {
     cl <- parallel::makeCluster(n_cores)
     parallel::clusterExport(cl, c("X1", "Y1", "X2", "Y2", "matrixDissimilarity"),
@@ -298,11 +395,18 @@ null_distri <- function(X1, Y1, X2, Y2, n.perm = 100, parallel = TRUE) {
 
 #' P-value of Similarity in Gene-drug Associations
 #'
-#' Computes p-value as number of null dissimilarities less than or equal to observed dissimilarity
+#' Computes p-value as number of null dissimilarities less than or equal to observed dissimilarity.
 #'
 #' @param dissimilarity observed dissimilarity
 #' @param dissimilarities null distribution of dissimilarities
 #' @return p-value
+#' @examples
+#' # simulate null distribution of dissimilarities
+#' dissimilarities = runif(100, min = 0, max = 1)
+#'
+#' d = 0.10
+#' p_value(d, dissimilarities)
+#'
 #' @export
 p_value <- function(dissimilarity, dissimilarities) {
   # Computes p-value as number of null dissimilarities less than or equal to observed dissimilarity
@@ -316,11 +420,31 @@ p_value <- function(dissimilarity, dissimilarities) {
 
 #' Select Significant Results from 'HierBipartite'
 #'
-#' Filters bipartite hierarchical clustering merged groups by p-value
+#' Selects clusters from bipartite graph-based hierarchical clustering with p-value less than or equal to a p-value cutoff.
 #'
-#' @param results list of results from bipartite hierarchical clustering
-#' @param p p-value to filter merged groups by
-#' @return list of results from bipartite hierarchical clustering filtered by p-value
+#' @param results list of results from bipartite graph-based hierarchical clustering
+#' @param p p-value cutoff
+#' @return list of results from bipartite graph-based hierarchical clustering, but only with clusters with p-value at or below p-value cutoff
+#' @examples
+#' # sample bipartite graph-based hierarchical clustering of three groups
+#' data(ctrp2)
+#'
+#' groups = ctrp2$groups
+#' X = ctrp2$X
+#' Y = ctrp2$Y
+#'
+#' groupNames = names(groups)
+#' groupSmall = groups[groupNames[1:3]]
+#'
+#' \dontrun{
+#' result = hierBipartite(X, Y, groupSmall)
+#'
+#' # set fictitious p-values, with one cluster with p-value less than the cutoff
+#' # and the other not
+#' result$nodePvals = list(0.03, 0.12)
+#' getSignificantMergedGroups(result, p = 0.05)
+#' }
+#'
 #' @export
 getSignificantMergedGroups <- function(results, p = 0.05) {
   # filters bipartite hierarchical clustering merged groups by p-value
@@ -330,7 +454,7 @@ getSignificantMergedGroups <- function(results, p = 0.05) {
   # Output:
   #   retLst; list of results from bipartite hierarchical clustering filtered by p-value
   if (!"nodePvals" %in% names(results)) {
-    print("p-value must be computed first!")
+    stop("p-value must be computed first!")
   } else {
     nodePvals <- results[["nodePvals"]]
     groupMerges <- results[["groupMerges"]]
